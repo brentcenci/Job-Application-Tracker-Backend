@@ -2,6 +2,7 @@ package com.example.repo
 
 import com.example.JobApplication
 import com.mongodb.client.model.Filters
+import com.mongodb.client.result.DeleteResult
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -22,11 +23,11 @@ class JobApplicationRepo(private val collection: MongoCollection<JobApplication>
         return collection.find(Filters.eq("_id", jobId)).firstOrNull()
     }
 
-    suspend fun updateJobApplication(id: String, updatedJobApplication: JobApplication) {
+    suspend fun updateJobApplication(id: ObjectId, updatedJobApplication: JobApplication) {
         collection.replaceOne(Document("_id", id), updatedJobApplication)
     }
 
-    suspend fun deleteJobApplication(id: String) {
+    suspend fun deleteJobApplication(id: ObjectId) {
         collection.deleteOne(Document("_id", id))
     }
 }
