@@ -2,6 +2,7 @@ package com.example
 
 import com.example.plugins.*
 import com.example.repo.JobApplicationRepo
+import com.example.repo.UserRepo
 import com.mongodb.ConnectionString
 import com.mongodb.MongoClientSettings
 import com.mongodb.ServerApi
@@ -48,12 +49,23 @@ fun getJobApplicationsCollection(database: MongoDatabase): MongoCollection<JobAp
     return database.getCollection<JobApplication>("job_applications")
 }
 
+fun getUsersCollection(database: MongoDatabase): MongoCollection<User> {
+    return database.getCollection<User>("users")
+}
+
 data class JobApplication(
-    @BsonId val jobId: ObjectId = ObjectId(),
+    @BsonId val jobId: ObjectId? = null,
+    val userId: ObjectId = ObjectId("64ff9c8e7a3b3e4f9c6a3b32"),
     val jobTitle: String,
     val companyName: String,
     val applicationDate: String,
     val status: String,
+)
+
+data class User(
+    @BsonId val userId: ObjectId? = null,
+    val username: String,
+    val passwordHash: String
 )
 
 fun Application.module() {
@@ -67,9 +79,10 @@ fun Application.module() {
 
     val database = initMongoClient()
     val jobApplicationRepo = JobApplicationRepo(getJobApplicationsCollection(database))
+    val userRepo = UserRepo(getUsersCollection(database))
 
     configureSecurity()
     configureMonitoring()
     configureSerialization()
-    configureRouting(jobApplicationRepo)
+    configureRouting(jobApplicationRepo, userRepo)
 }
