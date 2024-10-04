@@ -2,6 +2,7 @@ package com.example.repo
 
 import com.example.JobApplication
 import com.mongodb.client.model.Filters
+import com.mongodb.client.model.Updates
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import kotlinx.coroutines.flow.first
@@ -36,6 +37,18 @@ class JobApplicationRepo(private val collection: MongoCollection<JobApplication>
             )
         }
         return result != null
+
+        /*val result = collection.updateOne(
+            Filters.eq("_id", id),
+            Updates.combine(
+                Updates.set("jobTitle", updatedJobApplication.jobTitle),
+                Updates.set("companyName", updatedJobApplication.companyName),
+                Updates.set("applicationDate", updatedJobApplication.applicationDate),
+                Updates.set("status", updatedJobApplication.status),
+            )
+        )
+
+        return result.modifiedCount > 0*/
     }
 
     suspend fun deleteJobApplication(id: ObjectId): Boolean {
