@@ -1,6 +1,6 @@
 package com.example.repo
 
-import com.example.JobApplication
+import com.example.data.JobApplication
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
 import com.mongodb.client.result.DeleteResult

@@ -1,6 +1,6 @@
 package com.example.repo
 
-import com.example.User
+import com.example.data.User
 import com.mongodb.client.model.Filters
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import kotlinx.coroutines.flow.firstOrNull

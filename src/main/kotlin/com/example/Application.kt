@@ -1,5 +1,7 @@
 package com.example
 
+import com.example.data.JobApplication
+import com.example.data.User
 import com.example.plugins.*
 import com.example.repo.JobApplicationRepo
 import com.example.repo.UserRepo
@@ -52,21 +54,6 @@ fun getJobApplicationsCollection(database: MongoDatabase): MongoCollection<JobAp
 fun getUsersCollection(database: MongoDatabase): MongoCollection<User> {
     return database.getCollection<User>("users")
 }
-
-data class JobApplication(
-    @BsonId val jobId: ObjectId? = null,
-    val userId: ObjectId = ObjectId("64ff9c8e7a3b3e4f9c6a3b32"),
-    val jobTitle: String,
-    val companyName: String,
-    val applicationDate: String,
-    val status: String,
-)
-
-data class User(
-    @BsonId val userId: ObjectId? = null,
-    val username: String,
-    val passwordHash: String
-)
 
 fun Application.module() {
 
