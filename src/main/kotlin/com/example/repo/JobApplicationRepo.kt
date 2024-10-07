@@ -4,6 +4,7 @@ import com.example.data.JobApplication
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Updates
 import com.mongodb.client.result.DeleteResult
+import com.mongodb.client.result.InsertOneResult
 import com.mongodb.kotlin.client.coroutine.MongoCollection
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -12,9 +13,9 @@ import org.bson.Document
 import org.bson.types.ObjectId
 
 class JobApplicationRepo(private val collection: MongoCollection<JobApplication>) {
-    suspend fun createJobApplication(jobApplication: JobApplication) {
-        val jobWithUserId = jobApplication.copy(userId = jobApplication.userId ?: ObjectId("64ff9c8e7a3b3e4f9c6a3b32"), jobId = ObjectId.get())
-        collection.insertOne(jobWithUserId)
+    suspend fun createJobApplication(jobApplication: JobApplication): Boolean {
+        val jobWithUserId = jobApplication.copy(jobId = ObjectId.get())
+        return collection.insertOne(jobWithUserId).wasAcknowledged()
     }
 
     suspend fun getAllJobApplications(): List<JobApplication> {

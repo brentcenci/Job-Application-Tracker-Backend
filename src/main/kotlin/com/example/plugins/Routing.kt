@@ -10,6 +10,7 @@ import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.http.content.*
 import io.ktor.server.plugins.*
 import io.ktor.server.request.*
@@ -22,13 +23,23 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
         //JOBS
         authenticate {
             get("/jobs") {
-                val jobs = jobApplicationRepo.getAllJobApplications()
-                call.respond(jobs)
+                val username = getAuthenticatedUser(call)
+                val jobApplications = jobApplicationRepo.getJobApplicationsByUserId(ObjectId(username))
+                call.respond(jobApplications)
             }
             post("/jobs") {
-                val jobApp = call.receive<JobApplication>()
-                jobApplicationRepo.createJobApplication(jobApp)
-                call.respond(HttpStatusCode.Created, jobApp)
+                val username = getAuthenticatedUser(call)
+                println("Username is: $username")
+                val jobApp = call.receive<JobApplication>().copy(
+                    userId = ObjectId(username)
+                )
+                val result = jobApplicationRepo.createJobApplication(jobApp)
+                if (result) {
+                    call.respond(HttpStatusCode.Created, jobApp)
+                } else {
+                    call.respond(HttpStatusCode.InternalServerError, "Failed to Create Job")
+                }
+
             }
             get("/jobs/{id}") {
                 val jobIdParam = call.parameters["id"]
@@ -50,6 +61,8 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                 }
             }
             put("/jobs/{id}") {
+
+                val username = getAuthenticatedUser(call)
 
                 //Get the Job Id from the call parameters, if not found return with BadRequest
                 val jobIdParam = call.parameters["id"]
@@ -74,9 +87,16 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                     return@put
                 }
 
+                val job = jobApplicationRepo.getJobApplicationById(jobId)
                 // If Job Application does not exist, return with NotFound
-                if (jobApplicationRepo.getJobApplicationById(jobId) == null) {
+                if (job == null) {
                     call.respond(HttpStatusCode.NotFound, "Job Application Not Found")
+                    return@put
+                }
+
+                // Check authenticated user owns the job
+                if (job.userId != ObjectId(username)) {
+                    call.respond(HttpStatusCode.Forbidden, "You do not have permission to modify this job.")
                     return@put
                 }
 
@@ -89,6 +109,9 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                 }
             }
             delete("/jobs/{id}") {
+
+                val username = getAuthenticatedUser(call)
+
                 //Get the Job Id from the call parameters, if not found return with BadRequest
                 val jobIdParam = call.parameters["id"]
                 if (jobIdParam == null) {
@@ -104,9 +127,16 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                     return@delete
                 }
 
+                val job = jobApplicationRepo.getJobApplicationById(jobId)
                 // If Job Application does not exist, return with NotFound
-                if (jobApplicationRepo.getJobApplicationById(jobId) == null) {
+                if (job == null) {
                     call.respond(HttpStatusCode.NotFound, "Job Application Not Found")
+                    return@delete
+                }
+
+                // Check authenticated user owns the job
+                if (job.userId != ObjectId(username)) {
+                    call.respond(HttpStatusCode.Forbidden, "You do not have permission to modify this job.")
                     return@delete
                 }
 
@@ -136,11 +166,16 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
         }
 
 
-
+/*
 
         // Static plugin. Try to access `/static/index.html`
         static("/static") {
             resources("static")
-        }
+        }*/
     }
+}
+
+fun getAuthenticatedUser(call: ApplicationCall): String {
+    val principal = call.principal<JWTPrincipal>()
+    return principal!!.payload.getClaim("username").asString()
 }
