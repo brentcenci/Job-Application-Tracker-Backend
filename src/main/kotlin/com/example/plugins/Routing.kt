@@ -24,14 +24,16 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
         authenticate {
             get("/jobs") {
                 val username = getAuthenticatedUser(call)
-                val jobApplications = jobApplicationRepo.getJobApplicationsByUserId(ObjectId(username))
+                val user = userRepo.getUserByUsername(username)
+                val jobApplications = jobApplicationRepo.getJobApplicationsByUserId(user!!.userId!!)
                 call.respond(jobApplications)
             }
             post("/jobs") {
                 val username = getAuthenticatedUser(call)
+                val user = userRepo.getUserByUsername(username)
                 println("Username is: $username")
                 val jobApp = call.receive<JobApplication>().copy(
-                    userId = ObjectId(username)
+                    userId = user!!.userId!!
                 )
                 val result = jobApplicationRepo.createJobApplication(jobApp)
                 if (result) {
@@ -63,6 +65,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
             put("/jobs/{id}") {
 
                 val username = getAuthenticatedUser(call)
+                val user = userRepo.getUserByUsername(username)
 
                 //Get the Job Id from the call parameters, if not found return with BadRequest
                 val jobIdParam = call.parameters["id"]
@@ -95,7 +98,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                 }
 
                 // Check authenticated user owns the job
-                if (job.userId != ObjectId(username)) {
+                if (job.userId != user!!.userId) {
                     call.respond(HttpStatusCode.Forbidden, "You do not have permission to modify this job.")
                     return@put
                 }
@@ -111,6 +114,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
             delete("/jobs/{id}") {
 
                 val username = getAuthenticatedUser(call)
+                val user = userRepo.getUserByUsername(username)
 
                 //Get the Job Id from the call parameters, if not found return with BadRequest
                 val jobIdParam = call.parameters["id"]
@@ -135,7 +139,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                 }
 
                 // Check authenticated user owns the job
-                if (job.userId != ObjectId(username)) {
+                if (job.userId != user!!.userId) {
                     call.respond(HttpStatusCode.Forbidden, "You do not have permission to modify this job.")
                     return@delete
                 }
