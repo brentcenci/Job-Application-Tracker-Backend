@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.example.data.Credentials
 import com.example.data.JobApplication
+import com.example.data.User
 import com.example.repo.JobApplicationRepo
 import com.example.repo.UserRepo
 import com.mongodb.kotlin.client.coroutine.MongoDatabase
@@ -17,6 +18,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.bson.types.ObjectId
+import org.mindrot.jbcrypt.BCrypt
+import java.security.SecureRandom
 
 fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRepo: UserRepo) {
     routing {
@@ -25,15 +28,24 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
             get("/jobs") {
                 val username = getAuthenticatedUser(call)
                 val user = userRepo.getUserByUsername(username)
-                val jobApplications = jobApplicationRepo.getJobApplicationsByUserId(user!!.userId!!)
+                if (user == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "You are not authorized")
+                    return@get
+                }
+                val jobApplications = jobApplicationRepo.getJobApplicationsByUserId(user.userId)
                 call.respond(jobApplications)
             }
             post("/jobs") {
                 val username = getAuthenticatedUser(call)
                 val user = userRepo.getUserByUsername(username)
+                if (user == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "You are not authorized")
+                    return@post
+                }
+
                 println("Username is: $username")
                 val jobApp = call.receive<JobApplication>().copy(
-                    userId = user!!.userId!!
+                    userId = user.userId
                 )
                 val result = jobApplicationRepo.createJobApplication(jobApp)
                 if (result) {
@@ -66,6 +78,11 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
 
                 val username = getAuthenticatedUser(call)
                 val user = userRepo.getUserByUsername(username)
+                if (user == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "You are not authorized")
+                    return@put
+                }
+
 
                 //Get the Job Id from the call parameters, if not found return with BadRequest
                 val jobIdParam = call.parameters["id"]
@@ -98,7 +115,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                 }
 
                 // Check authenticated user owns the job
-                if (job.userId != user!!.userId) {
+                if (job.userId != user.userId) {
                     call.respond(HttpStatusCode.Forbidden, "You do not have permission to modify this job.")
                     return@put
                 }
@@ -115,6 +132,10 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
 
                 val username = getAuthenticatedUser(call)
                 val user = userRepo.getUserByUsername(username)
+                if (user == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "You are not authorized")
+                    return@delete
+                }
 
                 //Get the Job Id from the call parameters, if not found return with BadRequest
                 val jobIdParam = call.parameters["id"]
@@ -139,7 +160,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                 }
 
                 // Check authenticated user owns the job
-                if (job.userId != user!!.userId) {
+                if (job.userId != user.userId) {
                     call.respond(HttpStatusCode.Forbidden, "You do not have permission to modify this job.")
                     return@delete
                 }
@@ -157,15 +178,34 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
         //LOGIN
         post("/login") {
             val credentials = call.receive<Credentials>()
-            if (credentials.username == "user" && credentials.password == "pass") {
-                val token = JWT.create()
-                    .withAudience("jwt-audience")
-                    .withIssuer("https://jwt-provider-domain/")
-                    .withClaim("username", credentials.username)
-                    .sign(Algorithm.HMAC256("secret"))
-                call.respond(hashMapOf("token" to token))
+            val user = userRepo.getUserByUsername(credentials.username)
+            if (user == null || !BCrypt.checkpw(credentials.password, user.passwordHash)) {
+                call.respond(HttpStatusCode.Unauthorized, "Credentials not valid")
+                return@post
+            }
+
+            val token = JWT.create()
+                .withAudience("jwt-audience")
+                .withIssuer("https://jwt-provider-domain/")
+                .withClaim("username", credentials.username)
+                .sign(Algorithm.HMAC256("secret"))
+            call.respond(hashMapOf("token" to token))
+        }
+
+        post("/register") {
+            val credentials = call.receive<Credentials>()
+            if (userRepo.getUserByUsername(credentials.username) != null) {
+                call.respond(HttpStatusCode.Unauthorized, "User with this username already exists")
+                return@post
+            }
+            val hashedPassword = BCrypt.hashpw(credentials.password, BCrypt.gensalt())
+            val newUser = User(username = credentials.username, passwordHash = hashedPassword)
+            val result = userRepo.addUser(newUser)
+
+            if (result) {
+                call.respond(HttpStatusCode.Created, "New user registered successfully")
             } else {
-                call.respond(HttpStatusCode.Unauthorized, "Invalid Credentials")
+                call.respond(HttpStatusCode.InternalServerError, "Failed to register user")
             }
         }
 

@@ -8,10 +8,8 @@ import org.bson.types.ObjectId
 
 class UserRepo(private val collection: MongoCollection<User>) {
 
-    suspend fun addUser(user: User) : ObjectId {
-        val newUser = user.copy(userId = ObjectId())
-        collection.insertOne(newUser)
-        return newUser.userId!!
+    suspend fun addUser(user: User) : Boolean {
+        return collection.insertOne(user).wasAcknowledged()
     }
 
     suspend fun getUserById(userId: String): User? {
