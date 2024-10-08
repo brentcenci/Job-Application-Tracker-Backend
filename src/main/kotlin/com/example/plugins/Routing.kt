@@ -7,26 +7,22 @@ import com.example.data.JobApplication
 import com.example.data.User
 import com.example.repo.JobApplicationRepo
 import com.example.repo.UserRepo
-import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
-import io.ktor.server.http.content.*
-import io.ktor.server.plugins.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.bson.types.ObjectId
 import org.mindrot.jbcrypt.BCrypt
-import java.security.SecureRandom
 
 fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRepo: UserRepo) {
     routing {
         //JOBS
         authenticate {
             get("/jobs") {
-                val username = getAuthenticatedUser(call)
+                val username = getAuthenticatedUsername(call)
                 val user = userRepo.getUserByUsername(username)
                 if (user == null) {
                     call.respond(HttpStatusCode.Unauthorized, "You are not authorized")
@@ -36,7 +32,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                 call.respond(jobApplications)
             }
             post("/jobs") {
-                val username = getAuthenticatedUser(call)
+                val username = getAuthenticatedUsername(call)
                 val user = userRepo.getUserByUsername(username)
                 if (user == null) {
                     call.respond(HttpStatusCode.Unauthorized, "You are not authorized")
@@ -76,7 +72,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
             }
             put("/jobs/{id}") {
 
-                val username = getAuthenticatedUser(call)
+                val username = getAuthenticatedUsername(call)
                 val user = userRepo.getUserByUsername(username)
                 if (user == null) {
                     call.respond(HttpStatusCode.Unauthorized, "You are not authorized")
@@ -130,7 +126,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
             }
             delete("/jobs/{id}") {
 
-                val username = getAuthenticatedUser(call)
+                val username = getAuthenticatedUsername(call)
                 val user = userRepo.getUserByUsername(username)
                 if (user == null) {
                     call.respond(HttpStatusCode.Unauthorized, "You are not authorized")
@@ -219,7 +215,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
     }
 }
 
-fun getAuthenticatedUser(call: ApplicationCall): String {
+fun getAuthenticatedUsername(call: ApplicationCall): String {
     val principal = call.principal<JWTPrincipal>()
     return principal!!.payload.getClaim("username").asString()
 }
