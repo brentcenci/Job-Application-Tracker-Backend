@@ -25,6 +25,7 @@ dependencies {
     implementation("io.ktor:ktor-server-core-jvm")
     implementation("io.ktor:ktor-server-auth-jvm")
     implementation("io.ktor:ktor-server-auth-jwt-jvm")
+    implementation("io.ktor:ktor-server-cors")
     implementation("com.auth0:java-jwt")
     implementation("org.mindrot:jbcrypt:0.4")
     implementation("io.ktor:ktor-server-host-common-jvm")
