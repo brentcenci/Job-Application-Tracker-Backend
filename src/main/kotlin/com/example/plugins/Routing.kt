@@ -124,6 +124,58 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                     call.respond(HttpStatusCode.InternalServerError, "Unsuccessful Job Application Update")
                 }
             }
+            put("/jobs/update") {
+
+                val username = getAuthenticatedUsername(call)
+                val user = userRepo.getUserByUsername(username)
+                if (user == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "You are not authorized")
+                    return@put
+                }
+
+
+                /*//Get the Job Id from the call parameters, if not found return with BadRequest
+                val jobIdParam = call.parameters["id"]
+                */
+
+                /*// Convert the jobId to ObjectId format, otherwise if not valid return with BadRequest
+                */
+
+                // Get the updated job details from the request body, otherwise return with BadRequest
+                val updatedJob = try{
+                    call.receive<JobApplication>()
+                } catch (e: Exception){
+                    call.respond(HttpStatusCode.BadRequest, e.message ?: "Invalid Request Body")
+                    return@put
+                }
+
+                val jobId = updatedJob.jobId
+                if (jobId == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Job ID Missing")
+                    return@put
+                }
+
+                val job = jobApplicationRepo.getJobApplicationById(jobId)
+                // If Job Application does not exist, return with NotFound
+                if (job == null) {
+                    call.respond(HttpStatusCode.NotFound, "Job Application Not Found")
+                    return@put
+                }
+
+                // Check authenticated user owns the job
+                if (job.userId != user.userId) {
+                    call.respond(HttpStatusCode.Forbidden, "You do not have permission to modify this job.")
+                    return@put
+                }
+
+                // Attempt to update the Job Application, return with OK if success or InternalServerError if failed
+                val result = jobApplicationRepo.updateJobApplication(jobId, updatedJob)
+                if (result) {
+                    call.respond(HttpStatusCode.OK, "Job Application Updated")
+                } else {
+                    call.respond(HttpStatusCode.InternalServerError, "Unsuccessful Job Application Update")
+                }
+            }
             delete("/jobs/{id}") {
 
                 val username = getAuthenticatedUsername(call)
