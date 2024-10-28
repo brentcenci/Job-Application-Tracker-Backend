@@ -236,7 +236,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                 .withAudience("jwt-audience")
                 .withIssuer("https://jwt-provider-domain/")
                 .withClaim("username", credentials.username)
-                .sign(Algorithm.HMAC256("secret"))
+                .sign(Algorithm.HMAC256(System.getenv("JWT_SECRET")))
             call.respond(hashMapOf("token" to token))
         }
 

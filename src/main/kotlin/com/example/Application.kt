@@ -28,7 +28,7 @@ fun main() {
 }
 
 fun initMongoClient(): MongoDatabase {
-    val connectionString = "mongodb+srv://nigeltheaustralian:2IBZBl3Inf3NJuZt@cluster0.ahxpy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    val connectionString = System.getenv("CONNECTION_STRING") ?: throw IllegalArgumentException("Missing CONNECTION_STRING env variable")
     val serverApi = ServerApi.builder()
         .version(ServerApiVersion.V1)
         .build()

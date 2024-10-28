@@ -12,7 +12,7 @@ fun Application.configureSecurity() {
     val jwtAudience = "jwt-audience"
     val jwtDomain = "https://jwt-provider-domain/"
     val jwtRealm = "ktor sample app"
-    val jwtSecret = "secret"
+    val jwtSecret = System.getenv("JWT_SECRET") ?: throw IllegalArgumentException("Missing JWT_SECRET env variable")
     authentication {
         jwt {
             realm = jwtRealm
