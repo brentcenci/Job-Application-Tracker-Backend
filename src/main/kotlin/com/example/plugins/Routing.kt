@@ -268,6 +268,10 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
         get("/_ah/ready") {
             call.respondText("ready", ContentType.Text.Plain)
         }
+
+        get("/") {
+            call.respondText("welcome", ContentType.Text.Plain)
+        }
     }
 }
 
