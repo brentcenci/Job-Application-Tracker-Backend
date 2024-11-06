@@ -177,7 +177,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                     call.respond(HttpStatusCode.InternalServerError, "Unsuccessful Job Application Update")
                 }
             }
-            delete("/jobs/{id}") {
+            delete("/jobs/delete") {
 
                 val username = getAuthenticatedUsername(call)
                 val user = userRepo.getUserByUsername(username)
@@ -186,7 +186,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                     return@delete
                 }
 
-                //Get the Job Id from the call parameters, if not found return with BadRequest
+                /*//Get the Job Id from the call parameters, if not found return with BadRequest
                 val jobIdParam = call.parameters["id"]
                 if (jobIdParam == null) {
                     call.respond(HttpStatusCode.BadRequest, "Job ID Missing")
@@ -199,6 +199,19 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid Job ID")
                     return@delete
+                }*/
+
+                val currentJob = try{
+                    call.receive<JobApplication>()
+                } catch (e: Exception){
+                    call.respond(HttpStatusCode.BadRequest, e.message ?: "Invalid Request Body")
+                    return@delete
+                }
+
+                val jobId = currentJob.jobId
+                if (jobId == null) {
+                    call.respond(HttpStatusCode.BadRequest, "Job ID Missing")
+                    return@delete
                 }
 
                 val job = jobApplicationRepo.getJobApplicationById(jobId)
@@ -210,7 +223,7 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
 
                 // Check authenticated user owns the job
                 if (job.userId != user.userId) {
-                    call.respond(HttpStatusCode.Forbidden, "You do not have permission to modify this job.")
+                    call.respond(HttpStatusCode.Forbidden, "You do not have permission to delete this job.")
                     return@delete
                 }
 
