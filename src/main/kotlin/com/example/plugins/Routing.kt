@@ -177,13 +177,13 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                     call.respond(HttpStatusCode.InternalServerError, "Unsuccessful Job Application Update")
                 }
             }
-            delete("/jobs/delete") {
+            put("/jobs/delete") {
 
                 val username = getAuthenticatedUsername(call)
                 val user = userRepo.getUserByUsername(username)
                 if (user == null) {
                     call.respond(HttpStatusCode.Unauthorized, "You are not authorized")
-                    return@delete
+                    return@put
                 }
 
                 /*//Get the Job Id from the call parameters, if not found return with BadRequest
@@ -205,26 +205,26 @@ fun Application.configureRouting(jobApplicationRepo: JobApplicationRepo, userRep
                     call.receive<JobApplication>()
                 } catch (e: Exception){
                     call.respond(HttpStatusCode.BadRequest, e.message ?: "Invalid Request Body")
-                    return@delete
+                    return@put
                 }
 
                 val jobId = currentJob.jobId
                 if (jobId == null) {
                     call.respond(HttpStatusCode.BadRequest, "Job ID Missing")
-                    return@delete
+                    return@put
                 }
 
                 val job = jobApplicationRepo.getJobApplicationById(jobId)
                 // If Job Application does not exist, return with NotFound
                 if (job == null) {
                     call.respond(HttpStatusCode.NotFound, "Job Application Not Found")
-                    return@delete
+                    return@put
                 }
 
                 // Check authenticated user owns the job
                 if (job.userId != user.userId) {
                     call.respond(HttpStatusCode.Forbidden, "You do not have permission to delete this job.")
-                    return@delete
+                    return@put
                 }
 
                 val result = jobApplicationRepo.deleteJobApplication(jobId)
